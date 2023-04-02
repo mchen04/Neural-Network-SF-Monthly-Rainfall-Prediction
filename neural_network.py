@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+import tensorflow as tf
 
 # Load the dataset into a DataFrame
 df = pd.read_csv('modified_dataset_file.csv')
@@ -16,23 +17,22 @@ train_size = len(df) - len(df) % 12
 train_size = int(0.8 * train_size)
 
 # Split the data into training and test sets
-train_features, train_labels = features[:train_size], labels[:train_size]
-test_features, test_labels = features[train_size:], labels[train_size:]
+train_features, test_features, train_labels, test_labels = train_test_split(features, labels, test_size=0.2, shuffle=False)
 
-# Initialize a dictionary to store the trained models for each month
-models = {}
+# Define the neural network architecture
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(64, activation='relu', input_dim=1),
+    tf.keras.layers.Dense(12, activation='linear')
+])
 
-# Train a separate linear regression model for each month
-for month in range(12):
-    model = LinearRegression()
-    model.fit(train_features, train_labels[:, month])
-    models[month] = model
+# Compile the model
+model.compile(loss='mse', optimizer='adam')
 
-# Use the trained models to make predictions on the test data
-test_predictions = np.zeros_like(test_labels)
-for month in range(12):
-    model = models[month]
-    test_predictions[:, month] = model.predict(test_features)
+# Train the model on the training set
+history = model.fit(train_features, train_labels, epochs=100, batch_size=32, verbose=0)
+
+# Evaluate the model on the test set
+test_predictions = model.predict(test_features)
 
 # Compute the mean squared error between the predicted and actual rainfall values for each month
 mse = mean_squared_error(test_labels, test_predictions, multioutput='raw_values')

@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import PolynomialFeatures
 
 # Load the dataset into a DataFrame
 df = pd.read_csv('modified_dataset_file.csv')
@@ -11,13 +12,17 @@ df = pd.read_csv('modified_dataset_file.csv')
 labels = df.iloc[:, 1:].values
 features = df.iloc[:, 0].values.reshape(-1, 1)
 
+# Transform the input features into a polynomial feature matrix
+poly = PolynomialFeatures(degree=20)
+features_poly = poly.fit_transform(features)
+
 # Calculate the train size as the largest multiple of 12 that is less than or equal to 80% of the length of the dataset
 train_size = len(df) - len(df) % 12
 train_size = int(0.8 * train_size)
 
 # Split the data into training and test sets
-train_features, train_labels = features[:train_size], labels[:train_size]
-test_features, test_labels = features[train_size:], labels[train_size:]
+train_features, train_labels = features_poly[:train_size], labels[:train_size]
+test_features, test_labels = features_poly[train_size:], labels[train_size:]
 
 # Initialize a dictionary to store the trained models for each month
 models = {}
@@ -47,8 +52,8 @@ for month in range(12):
     row = month // 4
     col = month % 4
     ax = axs[row][col]
-    ax.plot(test_features, test_labels[:, month], label='Actual', color='blue')
-    ax.plot(test_features, test_predictions[:, month], label='Predicted', color='orange')
+    ax.plot(test_features[:, 1], test_labels[:, month], label='Actual', color='blue')
+    ax.plot(test_features[:, 1], test_predictions[:, month], label='Predicted', color='orange')
     ax.set_xlabel("Year")
     ax.set_ylabel("Rainfall (inches)")
     ax.set_title(f"Month {month + 1}")

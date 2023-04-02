@@ -1,0 +1,66 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import PolynomialFeatures
+
+def compute_cost(predictions, labels, num_examples):
+    cost = np.sum(np.square(predictions - labels)) / num_examples
+    return cost
+
+# Load the dataset into a DataFrame
+df = pd.read_csv('modified_dataset_file.csv')
+
+# Split the data into features and labels
+labels = df.iloc[:, 1:].values
+features = df.iloc[:, 0].values.reshape(-1, 1)
+
+# Calculate the train size as the largest multiple of 12 that is less than or equal to 80% of the length of the dataset
+train_size = len(df) - len(df) % 12
+train_size = int(0.8 * train_size)
+
+# Split the data into training and test sets
+train_features, train_labels = features[:train_size], labels[:train_size]
+test_features, test_labels = features[train_size:], labels[train_size:]
+
+# Initialize a dictionary to store the best polynomial degrees for each month
+best_degrees = {}
+
+# Loop over each month and find the best fit polynomial degree
+for month in range(12):
+    best_degree = 1
+    lowest_cost = float('inf')
+    for degree in range(1, 21):
+        # Transform the input features into a polynomial feature matrix
+        poly = PolynomialFeatures(degree=degree)
+        train_features_poly = poly.fit_transform(train_features)
+        test_features_poly = poly.transform(test_features)
+
+        # Define initial parameters for linear regression
+        w = np.zeros(degree + 1)
+        b = 0
+        
+        # Use gradient descent to find the optimal parameters
+        alpha = 0.01
+        num_iterations = 1000
+        for i in range(num_iterations):
+            # Compute the gradients
+            dw = (1/train_size) * np.dot(train_features_poly.T, (np.dot(train_features_poly, w) + b - train_labels[:, month]))
+            db = (1/train_size) * np.sum(np.dot(train_features_poly, w) + b - train_labels[:, month])
+
+            # Update the parameters
+            w = w - alpha * dw
+            b = b - alpha * db
+
+        # Compute the cost on the test set
+        test_predictions = np.dot(test_features_poly, w) + b
+        test_cost = compute_cost(test_predictions, test_labels[:, month], len(test_labels))
+
+        # Check if this degree has a lower cost than the previous best degree
+        if test_cost < lowest_cost:
+            best_degree = degree
+            lowest_cost = test_cost
+
+    # Store the best degree for this month in the dictionary
+    best_degrees[month + 1] = best_degree
+
+# Output the best polynomial degree for each month
+print(best_degrees)
