@@ -8,6 +8,7 @@ from sklearn.metrics import mean_squared_error
 df = pd.read_csv('modified_dataset_file.csv')
 
 # Split the data into features and labels
+#random
 labels = df.iloc[:, 1:].values
 features = df.iloc[:, 0].values.reshape(-1, 1)
 
